@@ -1,0 +1,307 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template creates Prowler infra
+  
+Parameters:
+  ProwlerImageName:
+    Type: String
+    Description: Name or URI for Prowler image (this can be any value that works with the 'docker pull' command)
+
+  SecAuditRole:
+    Type: String
+    Description: The name of the role which Prowler will use for scans
+    Default: ProwlerScanRole
+
+  MasterRoleArn:
+    Type: String
+    Description: ARN of a role used by Lambda to retrieve a list of all accounts in the organization (can be the SecAuditRole in the Master account)
+
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC
+
+  Subnet:
+    Type: AWS::EC2::Subnet::Id
+    Description: Subnet in which the Prowler ECS task will run. Needs network access to download Prowler image and use AWS APIs
+
+Resources:
+  ProwlerTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: Prowler
+      ContainerDefinitions:
+        - Image: !Ref ProwlerImageName
+          Cpu: 256
+          Memory: 1024
+          Name: ProwlerTask
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ProwlerExecutionLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ProwlerTaskLogs
+      Cpu: 256
+      Memory: 1024
+      NetworkMode: awsvpc
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn      
+      TaskRoleArn: !GetAtt ProwlerTaskRole.Arn
+      RequiresCompatibilities:
+        - FARGATE
+
+  ProwlerSecGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: The security group will be used for prowler fargate
+      GroupName: ProwlerExecutionSecurityGroup
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: HTTPS Rule
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+        - CidrIp: 0.0.0.0/0
+          Description: HTTP rule
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+  
+  ProwlerCluster:
+    Type: AWS::ECS::Cluster
+    Properties:      
+      ClusterName: Prowler
+      CapacityProviders:
+        - FARGATE
+
+  ProwlerInitiator:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Function that initiates the prowler ECS tasks
+      Environment:
+        Variables:
+          ACCOUNT_EXCLUSION_LIST: 1234
+          SECURITY_AUDIT_ROLE: !Ref SecAuditRole
+          MASTER_ROLE: !Ref MasterRoleArn
+          FARGATE_CLUSTER: !Ref ProwlerCluster
+          FARGATE_TASK_DEF_NAME: !Ref ProwlerTaskDefinition
+          SUBNET: !Ref Subnet
+          SECURITY_GROUP: !GetAtt ProwlerSecGroup.GroupId
+      FunctionName: ProwlerInitiator
+      Handler: index.handler
+      MemorySize: 256      
+      Role: !GetAtt ProwlerLambdaRole.Arn
+      Runtime: python3.7
+      Timeout: 240
+      Code:
+        ZipFile: |
+            import boto3
+            import os
+            from botocore.exceptions import ClientError
+
+            AWS_REGION = os.environ["AWS_REGION"]
+            SEC_AUDIT_ROLE = os.environ["SECURITY_AUDIT_ROLE"]
+            MASTER_ROLE = os.environ["MASTER_ROLE"]
+            FARGATE_CLUSTER = os.environ['FARGATE_CLUSTER']
+            FARGATE_TASK_DEF_NAME = os.environ['FARGATE_TASK_DEF_NAME']
+            SUBNET = os.environ["SUBNET"]
+            SG_ID = os.environ["SECURITY_GROUP"]
+            ACC_EXCLUSION_LIST = list(os.environ["ACCOUNT_EXCLUSION_LIST"].split(" "))
+
+            def assume_role(service, role_arn, region_name):
+                """
+                Function Assumes the role name that is passed
+                Return the boto3.client for service that is passed
+                """
+                try:
+                    sts_client = boto3.client('sts', region_name=region_name)
+                    Response = sts_client.assume_role(
+                        RoleArn=role_arn,
+                        RoleSessionName='ProwlerSession')
+
+                    aws_access_key_id = Response['Credentials']['AccessKeyId']
+                    aws_secret_access_key = Response['Credentials']['SecretAccessKey']
+                    aws_session_token = Response['Credentials']['SessionToken']
+
+                    client = boto3.client(
+                        service,
+                        aws_access_key_id=aws_access_key_id,
+                        aws_secret_access_key=aws_secret_access_key,
+                        aws_session_token=aws_session_token,
+                        region_name=region_name)
+
+                    return client
+                except ClientError as e:
+                    print(e.with_traceback)
+                    raise e
+
+            def get_accounts():
+                """
+                Function return account list fetched from master account's organization
+                """
+                try:
+                    org_client = assume_role("organizations", MASTER_ROLE, AWS_REGION)
+                    paginator = org_client.get_paginator("list_accounts")
+                    response_iterator = paginator.paginate()
+                    filtered_iterator = response_iterator.search("Accounts[?Status==`ACTIVE`]")
+                    accList = []
+                    for resp in response_iterator:
+                        for acc in resp["Accounts"]:
+                            if acc["Id"] not in ACC_EXCLUSION_LIST:
+                                accList.append(acc["Id"])
+                    return accList
+                except ClientError as e:
+                    print(e.with_traceback)
+                    raise e
+
+            def run_prowler_task(account, groupName):
+                ecs_client = boto3.client("ecs")
+
+                # Set Prowler commandline, specify group name through triggering Event
+                prowler_command = [
+                    "-A", account, "-R", SEC_AUDIT_ROLE, "-S", "-M", "json-asff",
+                    "-b", "-q", "-f", AWS_REGION]
+                if groupName is not None:
+                    prowler_command.append("-g")
+                    prowler_command.append(groupName)
+
+                resp = ecs_client.run_task(
+                    cluster=FARGATE_CLUSTER,
+                    launchType="FARGATE",
+                    taskDefinition=FARGATE_TASK_DEF_NAME,
+                    platformVersion='LATEST',
+                    overrides={
+                        'containerOverrides': [
+                            {
+                                "command": prowler_command,
+                                "name": "ProwlerTask"
+                            }
+                        ]
+                    },
+                    networkConfiguration={
+                        'awsvpcConfiguration': {
+                            'subnets': [SUBNET],
+                            'assignPublicIp': "ENABLED",
+                            'securityGroups': [SG_ID],
+                        },
+                    }
+                )
+
+            def handler(event, context):    
+                # Prowler Scan  against all account id of an OU ID
+                group_name = None
+                if "group" in event:
+                    group_name = event["group"]
+
+                for account in get_accounts():
+                    run_prowler_task(account, group_name)
+
+                # Test with single accountID
+                # run_prowler_task("", group_name)
+
+
+  # CW LogGroup for Lambda function
+  ProwlerLambdaLogGroup: 
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/ProwlerInitiator
+      RetentionInDays: 90
+
+  # CW LogGroup for ECS Task
+  ProwlerExecutionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/ecs/tasks/ProwlerExecution
+      RetentionInDays: 90
+
+  ECSExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      RoleName: ProwlerECSRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      Policies:
+        - PolicyName: ExecutionLogsPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:            
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: '*'
+
+  ProwlerTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ProwlerExecutionRole
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ProwlerAssumePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:            
+              - Action: sts:AssumeRole
+                Effect: Allow
+                Resource: !Join ['', [arn:aws:iam::*:role/, !Ref SecAuditRole]]
+
+  ProwlerLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ProwlerInitiatorRole
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      Policies:
+        - PolicyName: ProwlerInitiatorPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:                  
+                  - logs:CreateLogStream
+                  - logs:CreateLogGroup                  
+                  - logs:PutLogEvents                  
+                Effect: Allow
+                Resource: '*'
+              - Action:
+                  - ecs:RunTask
+                Effect: Allow
+                Resource: !Ref ProwlerTaskDefinition
+              - Action:
+                  - iam:PassRole
+                Effect: Allow
+                Resource:
+                  - !GetAtt ECSExecutionRole.Arn
+                  - !GetAtt ProwlerTaskRole.Arn
+              - Action: 
+                  - sts:AssumeRole
+                Effect: Allow
+                Resource: !Ref MasterRoleArn
+
+  # Event rule for prowler CIS level 1 check
+  ProwlerCISLv1Checks:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: "cron(0 4 * * ? *)"
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt ProwlerInitiator.Arn
+          Id: ProwlerCISLv1Checks
+          Input: "{\"group\": \"cislevel1\"}"

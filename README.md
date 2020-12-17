@@ -2,8 +2,8 @@
 WIP for automated Prowler scanning across multiple accounts in an AWS Organization
 
 All credit to the following authors, all I did was smash these together:
-https://github.com/toniblyx/prowler/tree/master/util/org-multi-account
-https://github.com/bkdinoop/learnDepot/tree/master/prowler-multiaccount
+* https://github.com/toniblyx/prowler/tree/master/util/org-multi-account
+* https://github.com/bkdinoop/learnDepot/tree/master/prowler-multiaccount
 
 These files are CloudFormation files which will automate the setup of Prowler
 for multi-account scanning in an AWS Organization. At a high-level, the following

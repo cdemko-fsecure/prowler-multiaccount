@@ -64,3 +64,10 @@ Inputs:
 
 * Currently, the type of Prowler scan that's run can be controlled by the content of the JSON-formatted Event sent to Lambda. If it contains a "group" key, the value will be used as part of the '-g' option to Prowler to specify which group of scans to run.
 * An account exclusion list is included with a dummy value in the Lambda environment variables. If you want to use/add to this list, add account numbers that shouldn't be scanned to the Enviroment variable as just a space-delimited string.
+
+# TODO
+
+* Add template for MasterRoleArn to avoid having to manually configure this
+* Add variables into prowler-multi-main for AWS::Partition to support other AWS partitions
+* Standardize on naming conventions across all files
+* Add proper DependsOn statements where needed

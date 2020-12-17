@@ -54,10 +54,10 @@ This file does everything else. It builds the following resources:
 
 Inputs:
 * ProwlerImageName - Name for prowler container to be used (Example: https://gallery.ecr.aws/y6q1p2v9/prowler)
-* SecAuditRole - The name of the role used in prowler-multi-account above
+* SecAuditRole - The name of the role created in prowler-multi-account above (ProwlerScanRole)
 * MasterRoleArn - ARN of a role the Lambda function can assume which allows listing of Organization accounts
 * VPC - For Fargate task networking configuration. Choose a valid VPC
-* SUbnet - For Fargate task networking configuration. Choose a valid subnet with outbound Internet access
+* Subnet - For Fargate task networking configuration. Choose a valid subnet with outbound Internet access
 
 # Usage Notes
 

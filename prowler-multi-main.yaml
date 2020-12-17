@@ -26,6 +26,9 @@ Parameters:
 Resources:
   ProwlerTaskDefinition:
     Type: AWS::ECS::TaskDefinition
+    DependsOn:
+      - ESCExecutionRole
+      - ProwlerTaskRole
     Properties:
       Family: Prowler
       ContainerDefinitions:

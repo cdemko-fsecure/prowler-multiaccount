@@ -24,7 +24,7 @@ in the Lambda function.
 
 * Enable SecurityHub in each account to be scanned for the appropriate region
 * Enable the Prowler integration into SecurityHub
-* Create a role in the organization master account which can be assumed by a lambda function in the account where Prowler is deployed (The ARN of this role will be needed when deploying prowler-multi-main, as the MasterRoleArn)
+* Create a role in the organization master account which can be assumed by a lambda function in the account where Prowler is deployed. The role needs permissions for `organizations:listAccounts` to list all available accounts in the Organization. (The ARN of this role will be needed when deploying prowler-multi-main, as the MasterRoleArn)
 * Deploy prowler-multi-account.yaml to all accounts that will be scanned
 * Deploy prowler-multi-main.yaml into the account that will host Prowler
 

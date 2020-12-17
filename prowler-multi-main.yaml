@@ -161,7 +161,7 @@ Resources:
                 # Set Prowler commandline, specify group name through triggering Event
                 prowler_command = [
                     "-A", account, "-R", SEC_AUDIT_ROLE, "-S", "-M", "json-asff",
-                    "-b", "-q", "-f", AWS_REGION]
+                    "-b", "-q", "-r", AWS_REGION, "-f", AWS_REGION]
                 if groupName is not None:
                     prowler_command.append("-g")
                     prowler_command.append(groupName)

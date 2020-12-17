@@ -182,7 +182,7 @@ Resources:
                     networkConfiguration={
                         'awsvpcConfiguration': {
                             'subnets': [SUBNET],
-                            'assignPublicIp': "ENABLED",
+                            'assignPublicIp': "DISABLED",
                             'securityGroups': [SG_ID],
                         },
                     }

@@ -54,7 +54,7 @@ This file does everything else. It builds the following resources:
 * Security group for Prowler tasks (only allows outbound HTTP/HTTPS)
 
 Inputs:
-* ProwlerImageName - Name for prowler container to be used (Example: https://gallery.ecr.aws/y6q1p2v9/prowler)
+* ProwlerImageName - Name for prowler container to be used (Example: public.ecr.aws/y6q1p2v9/prowler:latest)
 * SecAuditRole - The name of the role created in prowler-multi-account above (ProwlerScanRole)
 * MasterRoleArn - ARN of a role the Lambda function can assume which allows listing of Organization accounts
 * VPC - For Fargate task networking configuration. Choose a valid VPC

@@ -40,7 +40,7 @@ into Security Hub
 Inputs:
 * SecurityAccount - ID of the account where Prowler will reside
 * ProwlerExecRole - The name of the role Prowler uses to assume this new role you're creating
-* ProwlerScanRole - The name of this new role
+* ProwlerCrossAccountRole - The name of this new role
 
 ## prowler-multi-main
 

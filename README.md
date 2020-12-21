@@ -70,4 +70,5 @@ Inputs:
 * Add template for MasterRoleArn to avoid having to manually configure this
 * ~~Add variables into prowler-multi-main for AWS::Partition to support other AWS partitions~~
 * Standardize on naming conventions across all files
+* Convert Fn::Join to Fn::Sub where it makes sense for readability (based on examples from [this blog post](https://theburningmonk.com/2019/05/cloudformation-protip-use-fnsub-instead-of-fnjoin/))
 * Add proper DependsOn statements where needed

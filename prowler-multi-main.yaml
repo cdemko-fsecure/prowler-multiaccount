@@ -259,7 +259,9 @@ Resources:
             Statement:            
               - Action: sts:AssumeRole
                 Effect: Allow
-                Resource: !Join ['', [!Sub arn:${AWS::Partition}:iam::*:role/, !Ref SecAuditRole]]
+                Resource: !Sub
+                  - arn:${AWS::Partition}:iam::*:role/${Role}
+                  - { Role: !Ref SecAuditRole }
 
   ProwlerLambdaRole:
     Type: AWS::IAM::Role

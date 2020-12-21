@@ -70,6 +70,9 @@ Resources:
   
   ProwlerCluster:
     Type: AWS::ECS::Cluster
+    DependsOn:
+      - ECSExecutionRole
+      - ProwlerTaskRole
     Properties:      
       ClusterName: Prowler
       CapacityProviders:

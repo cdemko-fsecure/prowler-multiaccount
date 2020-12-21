@@ -27,7 +27,7 @@ Resources:
   ProwlerTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     DependsOn:
-      - ESCExecutionRole
+      - ECSExecutionRole
       - ProwlerTaskRole
     Properties:
       Family: Prowler

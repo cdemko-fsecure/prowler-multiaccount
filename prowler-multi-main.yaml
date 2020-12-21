@@ -228,8 +228,8 @@ Resources:
               - sts:AssumeRole
       RoleName: ProwlerECSRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
       Policies:
         - PolicyName: ExecutionLogsPolicy
           PolicyDocument:
@@ -259,7 +259,7 @@ Resources:
             Statement:            
               - Action: sts:AssumeRole
                 Effect: Allow
-                Resource: !Join ['', [arn:aws:iam::*:role/, !Ref SecAuditRole]]
+                Resource: !Join ['', [!Sub arn:${AWS::Partition}:iam::*:role/, !Ref SecAuditRole]]
 
   ProwlerLambdaRole:
     Type: AWS::IAM::Role

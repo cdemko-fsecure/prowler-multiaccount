@@ -30,7 +30,7 @@ in the Lambda function.
 
 # Explanations
 
-## prowler-multi-account
+## prowler-multi-scanrole
 
 This file creates the role Prowler will use (assume) in each account to be scanned.
 It has ViewOnly and SecurityAudit managed policies attached, plus two others that
@@ -68,6 +68,6 @@ Inputs:
 # TODO
 
 * Add template for MasterRoleArn to avoid having to manually configure this
-* Add variables into prowler-multi-main for AWS::Partition to support other AWS partitions
+* ~~Add variables into prowler-multi-main for AWS::Partition to support other AWS partitions~~
 * Standardize on naming conventions across all files
 * Add proper DependsOn statements where needed

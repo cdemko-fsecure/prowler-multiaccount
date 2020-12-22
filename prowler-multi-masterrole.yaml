@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Creates a role for the Prowler Initiator Lambda function to assume which allows listing all accounts in an AWS organization
+
+Parameters:
+  SecurityAccount:
+    Type: String
+    Description: Enter AWS Account Number where Prowler resides
+    AllowedPattern: ^\d{12}$
+    ConstraintDescription: An AWS Account Number must be a 12 digit numeric string.
+
+  ProwlerMasterRole:
+    Type: String
+    Description: The name of the role to be created which Prowler will use for scans
+    AllowedPattern: ^[\w+=,.@-]{1,64}$
+    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
+    Default: ProwlerMasterRole
+
+Resources:
+  MasterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: Provides permission to list accounts in an AWS organization, to be used by the Prowler Initiator Lambda function
+      RoleName: !Ref ProwlerMasterRole
+      Tags:
+        - Key: App
+          Value: Prowler
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${SecurityAccount}:root
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringLike:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${SecurityAccount}:role/ProwlerInitiatorRole
+      Policies:
+        - PolicyName: ProwlerListAccountsPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: OrganizationsListAccounts
+                Effect: Allow
+                Resource: "*"
+                Action:
+                  - organizations:ListAccounts
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "Prowler requires these rights to perform its Security Assessment."
+          - id: W28
+            reason: "Using a defined Role Name."
+
+Outputs:
+  ProwlerMasterRole:
+    Description: MasterRoleArn for prowler-multi-main
+    Value: !GetAtt MasterRole.Arn

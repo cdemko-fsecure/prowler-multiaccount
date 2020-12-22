@@ -8,13 +8,6 @@ Parameters:
     AllowedPattern: ^\d{12}$
     ConstraintDescription: An AWS Account Number must be a 12 digit numeric string.
 
-  ProwlerExecRole:
-    Type: String
-    Description: The name of the role Prowler uses to assume other roles for scans (this is created somewhere else)
-    AllowedPattern: ^[\w+=,.@-]{1,64}$
-    ConstraintDescription: Max 64 alphanumeric characters. Also special characters supported [+, =, ., @, -]
-    Default: ProwlerExecutionRole
-
   ProwlerCrossAccountRole:
     Type: String
     Description: The name of the role to be created which Prowler will use for scans
@@ -42,7 +35,7 @@ Resources:
               - sts:AssumeRole
             Condition:
               StringLike:
-                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${SecurityAccount}:role/${ProwlerExecRole}
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${SecurityAccount}:role/ProwlerExecutionRole
       ManagedPolicyArns:
         - !Sub arn:${AWS::Partition}:iam::aws:policy/SecurityAudit
         - !Sub arn:${AWS::Partition}:iam::aws:policy/job-function/ViewOnlyAccess

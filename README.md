@@ -74,3 +74,4 @@ Inputs:
 * Add proper DependsOn statements where needed
 * Abstract Prowler command line options to Lambda Env variable or Event contents for a more flexible configuration
 * Rate-limiting? Need to research potential impacts of executing 100 parallel ECS tasks in this fashion
+* Remove outbound HTTP rule from SG. I don't think this is needed

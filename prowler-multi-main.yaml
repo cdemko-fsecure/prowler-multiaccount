@@ -303,11 +303,6 @@ Resources:
           FromPort: 443
           IpProtocol: tcp
           ToPort: 443
-        - CidrIp: 0.0.0.0/0
-          Description: HTTP rule
-          FromPort: 80
-          IpProtocol: tcp
-          ToPort: 80
 
   ProwlerLambdaLogGroup:
     Type: AWS::Logs::LogGroup

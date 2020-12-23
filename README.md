@@ -65,9 +65,9 @@ This file does everything else. It builds the following resources:
 * Fargate Task Definition
 * Lambda function
 * EventBridge event
-* CloudWatch log groups for the Lambda and ECS tasks
 * IAM Roles for ECS execution, Prowler tasks, and Lambda
 * Security group for Prowler tasks (only allows outbound HTTP/HTTPS)
+* CloudWatch log groups for the Lambda and ECS tasks
 
 Inputs:
 * ProwlerImageName - Name for prowler container to be used (Example: public.ecr.aws/y6q1p2v9/prowler:latest)
@@ -87,7 +87,7 @@ Inputs:
 * ~~Add variables into prowler-multi-main for AWS::Partition to support other AWS partitions~~
 * Standardize on naming conventions across all files
 * ~~Convert Fn::Join to Fn::Sub where it makes sense for readability (based on examples from [this blog post](https://theburningmonk.com/2019/05/cloudformation-protip-use-fnsub-instead-of-fnjoin/))~~
-* Add proper DependsOn statements where needed
+* ~~Add proper DependsOn statements where needed~~
 * Abstract Prowler command line options to Lambda Env variable or Event contents for a more flexible configuration
 * Rate-limiting? Need to research potential impacts of executing 100 parallel ECS tasks in this fashion
-* Remove outbound HTTP rule from SG. I don't think this is needed
+* ~~Remove outbound HTTP rule from SG. I don't think this is needed~~

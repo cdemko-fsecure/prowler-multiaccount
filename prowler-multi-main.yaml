@@ -24,6 +24,16 @@ Parameters:
     Description: Subnet in which the Prowler ECS task will run. Needs network access to download Prowler image and use AWS APIs
 
 Resources:
+  ProwlerCluster:
+    Type: AWS::ECS::Cluster
+    DependsOn:
+      - ECSExecutionRole
+      - ProwlerTaskRole
+    Properties:
+      ClusterName: Prowler
+      CapacityProviders:
+        - FARGATE
+
   ProwlerTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     DependsOn:
@@ -50,36 +60,13 @@ Resources:
       RequiresCompatibilities:
         - FARGATE
 
-  ProwlerSecGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: The security group will be used for prowler fargate
-      GroupName: ProwlerExecutionSecurityGroup
-      VpcId: !Ref VPC
-      SecurityGroupEgress:
-        - CidrIp: 0.0.0.0/0
-          Description: HTTPS Rule
-          FromPort: 443
-          IpProtocol: tcp
-          ToPort: 443
-        - CidrIp: 0.0.0.0/0
-          Description: HTTP rule
-          FromPort: 80
-          IpProtocol: tcp
-          ToPort: 80
-  
-  ProwlerCluster:
-    Type: AWS::ECS::Cluster
-    DependsOn:
-      - ECSExecutionRole
-      - ProwlerTaskRole
-    Properties:      
-      ClusterName: Prowler
-      CapacityProviders:
-        - FARGATE
-
   ProwlerInitiator:
     Type: AWS::Lambda::Function
+    DependsOn:
+      - ProwlerCluster
+      - ProwlerTaskDefinition
+      - ProwlerLambdaRole
+      - ProwlerSecGroup
     Properties:
       Description: Function that initiates the prowler ECS tasks
       Environment:
@@ -203,20 +190,17 @@ Resources:
                 # Test with single accountID
                 # run_prowler_task("", group_name)
 
-
-  # CW LogGroup for Lambda function
-  ProwlerLambdaLogGroup: 
-    Type: AWS::Logs::LogGroup
+  ProwlerCISLv1Checks:
+    Type: AWS::Events::Rule
+    DependsOn:
+      - ProwlerInitiator
     Properties:
-      LogGroupName: /aws/lambda/ProwlerInitiator
-      RetentionInDays: 90
-
-  # CW LogGroup for ECS Task
-  ProwlerExecutionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /aws/ecs/tasks/ProwlerExecution
-      RetentionInDays: 90
+      ScheduleExpression: "cron(0 4 * * ? *)"
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt ProwlerInitiator.Arn
+          Id: ProwlerCISLv1Checks
+          Input: "{\"group\": \"cislevel1\"}"
 
   ECSExecutionRole:
     Type: AWS::IAM::Role
@@ -268,6 +252,10 @@ Resources:
 
   ProwlerLambdaRole:
     Type: AWS::IAM::Role
+    DependsOn:
+      - ProwlerTaskDefinition
+      - ECSExecutionRole
+      - ProwlerTaskRole
     Properties:
       RoleName: ProwlerInitiatorRole
       AssumeRolePolicyDocument:
@@ -303,13 +291,32 @@ Resources:
                 Effect: Allow
                 Resource: !Ref MasterRoleArn
 
-  # Event rule for prowler CIS level 1 check
-  ProwlerCISLv1Checks:
-    Type: AWS::Events::Rule
+  ProwlerSecGroup:
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      ScheduleExpression: "cron(0 4 * * ? *)"
-      State: "ENABLED"
-      Targets:
-        - Arn: !GetAtt ProwlerInitiator.Arn
-          Id: ProwlerCISLv1Checks
-          Input: "{\"group\": \"cislevel1\"}"
+      GroupDescription: The security group will be used for prowler fargate
+      GroupName: ProwlerExecutionSecurityGroup
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: HTTPS Rule
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+        - CidrIp: 0.0.0.0/0
+          Description: HTTP rule
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+
+  ProwlerLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/ProwlerInitiator
+      RetentionInDays: 90
+
+  ProwlerExecutionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/ecs/tasks/ProwlerExecution
+      RetentionInDays: 90

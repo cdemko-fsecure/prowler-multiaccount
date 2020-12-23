@@ -86,7 +86,7 @@ Inputs:
 * ~~Add template for MasterRoleArn to avoid having to manually configure this~~
 * ~~Add variables into prowler-multi-main for AWS::Partition to support other AWS partitions~~
 * Standardize on naming conventions across all files
-* Convert Fn::Join to Fn::Sub where it makes sense for readability (based on examples from [this blog post](https://theburningmonk.com/2019/05/cloudformation-protip-use-fnsub-instead-of-fnjoin/))
+* ~~Convert Fn::Join to Fn::Sub where it makes sense for readability (based on examples from [this blog post](https://theburningmonk.com/2019/05/cloudformation-protip-use-fnsub-instead-of-fnjoin/))~~
 * Add proper DependsOn statements where needed
 * Abstract Prowler command line options to Lambda Env variable or Event contents for a more flexible configuration
 * Rate-limiting? Need to research potential impacts of executing 100 parallel ECS tasks in this fashion

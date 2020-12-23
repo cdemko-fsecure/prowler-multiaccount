@@ -26,7 +26,7 @@ in the Lambda function.
 * Enable Security Hub in each account to be scanned for the appropriate region
 * Enable the Prowler integration into Security Hub
 * Deploy prowler-multi-masterrole.yaml to the Organization root/master account (or any account from which `aws organizations list-accounts` can be executed successfully)
-* Deploy prowler-multi-scanrole.yaml to all accounts that will be scanned
+* Deploy prowler-multi-scanrole.yaml to all accounts that will be scanned (like through CloudFormation StackSets)
 * Deploy prowler-multi-main.yaml into the account that will host Prowler
 
 # Explanations

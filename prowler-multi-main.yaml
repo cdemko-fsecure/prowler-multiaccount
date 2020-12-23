@@ -5,6 +5,7 @@ Parameters:
   ProwlerImageName:
     Type: String
     Description: Name or URI for Prowler image (this can be any value that works with the 'docker pull' command)
+    Default: public.ecr.aws/y6q1p2v9/prowler:latest
 
   SecAuditRole:
     Type: String

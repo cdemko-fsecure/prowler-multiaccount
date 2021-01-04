@@ -71,7 +71,7 @@ This file does everything else. It builds the following resources:
 
 Inputs:
 * ProwlerImageName - Name for prowler container to be used (Example: public.ecr.aws/y6q1p2v9/prowler:latest)
-* SecAuditRole - The name of the role created in prowler-multi-account above
+* SecAuditRole - The name of the role created in prowler-multi-scanrole above
 * MasterRoleArn - The ARN of the role created in prowler-multi-masterrole above
 * VPC - For Fargate task networking configuration. Choose a valid VPC
 * Subnet - For Fargate task networking configuration. Choose a valid subnet with outbound Internet access

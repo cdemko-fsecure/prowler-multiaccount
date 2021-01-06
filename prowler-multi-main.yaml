@@ -127,24 +127,46 @@ Resources:
                     print(e.with_traceback)
                     raise e
 
-            def get_accounts():
+            def get_accounts(ou_ids):
                 """
                 Function return account list fetched from master account's organization
                 """
-                try:
-                    org_client = assume_role("organizations", MASTER_ROLE, AWS_REGION)
-                    paginator = org_client.get_paginator("list_accounts")
-                    response_iterator = paginator.paginate()
-                    filtered_iterator = response_iterator.search("Accounts[?Status==`ACTIVE`]")
-                    accList = []
-                    for resp in response_iterator:
-                        for acc in resp["Accounts"]:
-                            if acc["Id"] not in ACC_EXCLUSION_LIST:
-                                accList.append(acc["Id"])
-                    return accList
-                except ClientError as e:
-                    print(e.with_traceback)
-                    raise e
+                acc_list = []
+                org_client = assume_role("organizations", MASTER_ROLE, AWS_REGION)
+            
+                # If no OU IDs are given, retrieve all accounts
+                if ou_ids is None:
+                    try:
+                        paginator = org_client.get_paginator("list_accounts")
+                        response_iterator = paginator.paginate()
+                        filtered_iterator = response_iterator.search(
+                            "Accounts[?Status==`ACTIVE`]")
+                        for resp in response_iterator:
+                            for acc in resp["Accounts"]:
+                                if acc["Id"] not in ACC_EXCLUSION_LIST:
+                                    acc_list.append(acc["Id"])
+                    except ClientError as e:
+                        print(e.with_traceback)
+                        raise e
+            
+                # Else, retrieve IDs for each account in the given OUs
+                else:
+                    try:
+                        paginator = org_client.get_paginator("list_accounts_for_parent")
+                        for ou_id in ou_ids:
+                            response_iterator = paginator.paginate(ParentId=ou_id,)
+                            filtered_iterator = response_iterator.search(
+                                "Accounts[?Status==`ACTIVE`]")
+                            for resp in response_iterator:
+                                for acc in resp["Accounts"]:
+                                    if acc["Id"] not in ACC_EXCLUSION_LIST:
+                                        acc_list.append(acc["Id"])
+                    except ClientError as e:
+                        print(e.with_traceback)
+                        raise e
+            
+                return acc_list
+
 
             def run_prowler_task(account, groupName):
                 ecs_client = boto3.client("ecs")
@@ -179,17 +201,12 @@ Resources:
                     }
                 )
 
-            def handler(event, context):    
-                # Prowler Scan  against all account id of an OU ID
-                group_name = None
-                if "group" in event:
-                    group_name = event["group"]
+            def handler(event, context):
+                group_name = event.get("group", None)
+                ou_ids     = event.get("ou", None)
 
-                for account in get_accounts():
+                for account in get_accounts(ou_ids):
                     run_prowler_task(account, group_name)
-
-                # Test with single accountID
-                # run_prowler_task("", group_name)
 
   ProwlerCISLv1Checks:
     Type: AWS::Events::Rule

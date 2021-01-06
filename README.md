@@ -79,7 +79,7 @@ Inputs:
 # Usage Notes
 
 * Currently, the type of Prowler scan that's run can be controlled by the content of the JSON-formatted Event sent to Lambda. If it contains a "group" key, the value will be used as part of the '-g' option to Prowler to specify which group of scans to run.
-* The event can also be used to scope scans to groups of accounts based on OU, using the ListAccountsForParent API. By providing a key of "ou" and a value containing a list of OU IDs, you can control which accounts receive what kinds of scans and how often.
+* The event can also be used to scope scans to groups of accounts based on OU, using the ListAccountsForParent API. By providing a key of "ou" and a value containing a list of OU IDs, you can control which accounts receive what kinds of scans and how often. Please note that the ListAccountsForParent API does not automatically include child OUs. See [the API reference](https://docs.aws.amazon.com/organizations/latest/APIReference/API_ListAccountsForParent.html) for more information.
 * An account exclusion list is included with a dummy value in the Lambda environment variables. If you want to use/add to this list, add account numbers that shouldn't be scanned to the Environment variable as just a space-delimited string.
 
 # TODO

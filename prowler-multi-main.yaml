@@ -101,10 +101,6 @@ Resources:
             ACC_EXCLUSION_LIST = list(os.environ["ACCOUNT_EXCLUSION_LIST"].split(" "))
 
             def assume_role(service, role_arn, region_name):
-                """
-                Function Assumes the role name that is passed
-                Return the boto3.client for service that is passed
-                """
                 try:
                     sts_client = boto3.client('sts', region_name=region_name)
                     Response = sts_client.assume_role(
@@ -128,13 +124,9 @@ Resources:
                     raise e
 
             def get_accounts(ou_ids):
-                """
-                Function return account list fetched from master account's organization
-                """
                 acc_list = []
                 org_client = assume_role("organizations", MASTER_ROLE, AWS_REGION)
             
-                # If no OU IDs are given, retrieve all accounts
                 if ou_ids is None:
                     try:
                         paginator = org_client.get_paginator("list_accounts")
@@ -149,7 +141,6 @@ Resources:
                         print(e.with_traceback)
                         raise e
             
-                # Else, retrieve IDs for each account in the given OUs
                 else:
                     try:
                         paginator = org_client.get_paginator("list_accounts_for_parent")
@@ -167,11 +158,9 @@ Resources:
             
                 return acc_list
 
-
             def run_prowler_task(account, groupName):
                 ecs_client = boto3.client("ecs")
 
-                # Set Prowler commandline, specify group name through triggering Event
                 prowler_command = [
                     "-A", account, "-R", SEC_AUDIT_ROLE, "-S", "-M", "json-asff",
                     "-b", "-q", "-r", AWS_REGION, "-f", AWS_REGION]

@@ -133,10 +133,9 @@ Resources:
                         response_iterator = paginator.paginate()
                         filtered_iterator = response_iterator.search(
                             "Accounts[?Status==`ACTIVE`]")
-                        for resp in response_iterator:
-                            for acc in resp["Accounts"]:
-                                if acc["Id"] not in ACC_EXCLUSION_LIST:
-                                    acc_list.append(acc["Id"])
+                        for resp in filtered_iterator:
+                            if resp["Id"] not in ACC_EXCLUSION_LIST:
+                                acc_list.append(resp["Id"])
                     except ClientError as e:
                         print(e.with_traceback)
                         raise e
@@ -148,10 +147,9 @@ Resources:
                             response_iterator = paginator.paginate(ParentId=ou_id,)
                             filtered_iterator = response_iterator.search(
                                 "Accounts[?Status==`ACTIVE`]")
-                            for resp in response_iterator:
-                                for acc in resp["Accounts"]:
-                                    if acc["Id"] not in ACC_EXCLUSION_LIST:
-                                        acc_list.append(acc["Id"])
+                            for resp in filtered_iterator:
+                                if resp["Id"] not in ACC_EXCLUSION_LIST:
+                                    acc_list.append(resp["Id"])
                     except ClientError as e:
                         print(e.with_traceback)
                         raise e

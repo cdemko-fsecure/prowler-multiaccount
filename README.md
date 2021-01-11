@@ -94,3 +94,4 @@ Inputs:
 * Rate-limiting? Need to research potential impacts of executing 100 parallel ECS tasks in this fashion
 * ~~Remove outbound HTTP rule from SG. I don't think this is needed~~
 * Add configuration options for region settings (see Usage Notes above)
+* Move Lambda function out of the CFN template while also still providing the simplest-possible deployment options
